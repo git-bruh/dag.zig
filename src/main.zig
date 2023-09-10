@@ -129,4 +129,74 @@ pub fn DAG(comptime T: type) type {
     };
 }
 
-test "basic add functionality" {}
+test "tsort on int array" {
+    const graph = [_][]const u8{
+        &[_]u8{ 1, 2 }, // 0,
+        &[_]u8{4}, // 1,
+        &[_]u8{ 1, 3 }, // 2
+        &[_]u8{1}, // 3
+        &[_]u8{}, // 4
+    };
+
+    var dag = DAG(u8).init(testing.allocator);
+    defer dag.deinit();
+
+    for (0.., graph) |idx, arr| {
+        try dag.add_child(@intCast(idx), null);
+
+        for (arr) |item| {
+            try dag.add_child(@intCast(idx), item);
+        }
+    }
+
+    var sorted = std.ArrayList(u8).init(testing.allocator);
+    defer sorted.deinit();
+
+    try dag.tsort(2, &sorted);
+
+    var expected = [_]u8{ 4, 1, 3, 2 };
+
+    try testing.expectEqualSlices(u8, &expected, sorted.items);
+}
+
+fn test_insert_helper(dag: *DAG([]const u8), name: []const u8, comptime size: usize, deps: [size][]const u8) !void {
+    try dag.add_child(name, null);
+
+    for (deps) |dep| {
+        try dag.add_child(name, dep);
+    }
+}
+
+test "tsort on string map" {
+    var foo_deps = [_][]const u8{"zoo"};
+    var bar_deps = [_][]const u8{ "baz", "foo" };
+    var baz_deps = [_][]const u8{"zoo"};
+    var fu_deps = [_][]const u8{};
+    var zoo_deps = [_][]const u8{"fu"};
+    var main_deps = [_][]const u8{ "foo", "bar", "baz" };
+
+    var dag = DAG([]const u8).init(testing.allocator);
+    defer dag.deinit();
+
+    try test_insert_helper(&dag, "foo", foo_deps.len, foo_deps);
+    try test_insert_helper(&dag, "bar", bar_deps.len, bar_deps);
+    try test_insert_helper(&dag, "baz", baz_deps.len, baz_deps);
+    try test_insert_helper(&dag, "fu", fu_deps.len, fu_deps);
+    try test_insert_helper(&dag, "zoo", zoo_deps.len, zoo_deps);
+    try test_insert_helper(&dag, "main", main_deps.len, main_deps);
+
+    var sorted = std.ArrayList([]const u8).init(testing.allocator);
+    defer sorted.deinit();
+
+    try dag.tsort("main", &sorted);
+
+    var expected = [_][]const u8{ "fu", "zoo", "foo", "baz", "bar", "main" };
+
+    try testing.expectEqualSlices(
+        []const u8,
+        &expected,
+        sorted.items,
+    );
+}
+
+test "tsort cycle test" {}
