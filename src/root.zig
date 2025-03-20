@@ -168,12 +168,12 @@ fn test_insert_helper(dag: *DAG([]const u8), name: []const u8, comptime size: us
 }
 
 test "tsort on string map" {
-    var foo_deps = [_][]const u8{"zoo"};
-    var bar_deps = [_][]const u8{ "baz", "foo" };
-    var baz_deps = [_][]const u8{"zoo"};
-    var fu_deps = [_][]const u8{};
-    var zoo_deps = [_][]const u8{"fu"};
-    var main_deps = [_][]const u8{ "foo", "bar", "baz" };
+    const foo_deps = [_][]const u8{"zoo"};
+    const bar_deps = [_][]const u8{ "baz", "foo" };
+    const baz_deps = [_][]const u8{"zoo"};
+    const fu_deps = [_][]const u8{};
+    const zoo_deps = [_][]const u8{"fu"};
+    const main_deps = [_][]const u8{ "foo", "bar", "baz" };
 
     var dag = DAG([]const u8).init(testing.allocator);
     defer dag.deinit();
